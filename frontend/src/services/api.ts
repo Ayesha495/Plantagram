@@ -4,7 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 // Base URL for your Django backend
 // Use your computer's local IP address, not localhost
 // Find it by running: ipconfig (Windows) or ifconfig (Mac/Linux)
-const API_BASE_URL = 'http://192.168.100.13/api';  // Replace with YOUR IP
+const API_BASE_URL = 'http://192.168.100.13:8000/api';  // Replace with YOUR IP
 
 // Create axios instance
 const api = axios.create({

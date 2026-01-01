@@ -1,8 +1,40 @@
-import React from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { Link, router } from 'expo-router';
+import { authService } from '../../src/services/AuthService';
 
 export default function LoginScreen() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleLogin = async () => {
+    // Validation
+    if (!email || !password) {
+      Alert.alert('Error', 'Please fill in all fields');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const response = await authService.login({ email, password });
+      
+      Alert.alert('Success', `Welcome back, ${response.user.username}!`);
+      
+      // Navigate to main app
+      router.replace('../(tabs)');
+    } catch (error: any) {
+      console.error('Login failed:', error);
+      Alert.alert(
+        'Login Failed',
+        error.error || 'Invalid email or password'
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <View style={styles.container}>
       <Text style={styles.logo}>🌱</Text>
@@ -14,6 +46,10 @@ export default function LoginScreen() {
         placeholder="Email"
         placeholderTextColor="#999"
         keyboardType="email-address"
+        autoCapitalize="none"
+        value={email}
+        onChangeText={setEmail}
+        editable={!loading}
       />
 
       <TextInput
@@ -21,13 +57,21 @@ export default function LoginScreen() {
         placeholder="Password"
         placeholderTextColor="#999"
         secureTextEntry
+        value={password}
+        onChangeText={setPassword}
+        editable={!loading}
       />
 
       <TouchableOpacity 
-        style={styles.button}
-        onPress={() => router.push('/home')}
+        style={[styles.button, loading && styles.buttonDisabled]}
+        onPress={handleLogin}
+        disabled={loading}
       >
-        <Text style={styles.buttonText}>Login</Text>
+        {loading ? (
+          <ActivityIndicator color="white" />
+        ) : (
+          <Text style={styles.buttonText}>Login</Text>
+        )}
       </TouchableOpacity>
 
       <Link href="/(auth)/signup" style={styles.link}>
@@ -79,6 +123,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 10,
+  },
+  buttonDisabled: {
+    backgroundColor: '#95b8a7',
   },
   buttonText: {
     color: 'white',

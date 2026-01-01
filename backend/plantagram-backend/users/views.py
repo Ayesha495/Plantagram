@@ -5,6 +5,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from django.contrib.auth import authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
 from .serializers import SignupSerializer, LoginSerializer, UserSerializer
+from django.contrib.auth import get_user_model
 
 @api_view(['POST'])
 @permission_classes([AllowAny])  # Anyone can signup
@@ -64,7 +65,7 @@ def login_view(request):
         # Django's authenticate expects username, but we use email
         # So we need to get the user first
         try:
-            from django.contrib.auth import get_user_model
+            
             User = get_user_model()
             user = User.objects.get(email=email)
             

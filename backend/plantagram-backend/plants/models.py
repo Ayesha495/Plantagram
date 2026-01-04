@@ -36,13 +36,15 @@ class Plant(models.Model):
     ]
     
     # API Reference
-    perenual_id = models.IntegerField(unique=True, null=True, blank=True, help_text="Perenual API plant ID")
+    trefle_id = models.IntegerField(unique=True, null=True, blank=True, help_text="Trefle API plant ID")
     
     # Basic information
     name = models.CharField(max_length=200)
+    name_urdu = models.CharField(max_length=200, null=True, blank=True)
     scientific_name = models.CharField(max_length=200, blank=True, null=True)
     common_names = models.TextField(blank=True, null=True, help_text="Comma-separated alternative names")
     description = models.TextField()
+    description_urdu = models.TextField(null=True, blank=True)
     
     # Care information
     care_level = models.CharField(max_length=20, choices=CARE_LEVEL_CHOICES, default='Medium')

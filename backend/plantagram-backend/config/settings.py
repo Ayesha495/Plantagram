@@ -152,3 +152,4 @@ SIMPLE_JWT = {
 
 # Trefle API Configuration
 TREFLE_API_KEY = config('TREFLE_API_KEY', default=None)
+HF_TOKEN = config('HF_TOKEN', default='')

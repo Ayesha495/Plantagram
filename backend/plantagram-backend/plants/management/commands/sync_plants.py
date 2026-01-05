@@ -1,11 +1,11 @@
 from django.core.management.base import BaseCommand
 from plants.models import Plant
 from plants.trefle_service import TrefleAPI
+from plants.llm_service import PlantCareLLM
 import time
-from googletrans import Translator
 
 class Command(BaseCommand):
-    help = 'Sync plants from Trefle API to database'
+    help = 'Sync plants from Trefle API to database with LLM-powered care data and Urdu translations'
     
     def add_arguments(self, parser):
         parser.add_argument(
@@ -22,7 +22,7 @@ class Command(BaseCommand):
     
     def handle(self, *args, **options):
         api = TrefleAPI()
-        translator = Translator()
+        llm = PlantCareLLM()  # Initialize LLM service (replaces Google Translate)
         pages = options['pages']
         clear_existing = options['clear']
         
@@ -32,7 +32,7 @@ class Command(BaseCommand):
             self.stdout.write(self.style.WARNING('Cleared all existing plants'))
         
         self.stdout.write(f'Fetching {pages} pages of plants from Trefle API...')
-        self.stdout.write(f'This will take approximately {pages * 2} seconds...\n')
+        self.stdout.write(f'Using Hugging Face LLM for care data and Urdu translations...\n')
         
         total_created = 0
         total_updated = 0
@@ -68,76 +68,86 @@ class Command(BaseCommand):
                     if plant_data.get('image_url'):
                         image_url = plant_data['image_url']
                     
-                    # Determine category based on family or genus
-                    category = 'Foliage'  # Default
-                    family = plant_data.get('family', '').lower()
-                    genus = plant_data.get('genus', '').lower()
+                    # Get family
+                    family = plant_data.get('family', '')
                     
-                    if 'cact' in family or 'cact' in genus:
-                        category = 'Cactus'
-                    elif 'succulent' in family or any(word in genus for word in ['aloe', 'echeveria', 'sedum']):
-                        category = 'Succulent'
-                    elif 'rose' in family or 'rose' in genus:
-                        category = 'Flowering'
-                    elif any(word in genus for word in ['fern', 'asplen', 'pterid']):
-                        category = 'Fern'
-                    elif 'vine' in common_name.lower() or 'climbing' in common_name.lower():
-                        category = 'Vine'
+                    self.stdout.write(f'  🌱 Processing: {common_name}')
                     
-                    # Default care values (Trefle doesn't provide detailed care info in list view)
-                    care_level = 'Medium'
-                    water_frequency_days = 7
-                    sunlight = 'Indirect Light'
+                    # ===== NEW: Get care data AND translations from LLM =====
+                    llm_data = llm.get_care_data_with_translations(
+                        plant_name=common_name,
+                        scientific_name=scientific_name,
+                        family=family
+                    )
                     
-                    # Temperature defaults
-                    temperature_min = 15
-                    temperature_max = 25
+                    if llm_data:
+                        # Extract care data from LLM
+                        category = llm_data.get('category', 'Foliage')
+                        care_level = llm_data.get('care_level', 'Medium')
+                        water_frequency_days = llm_data.get('watering_days', 7)
+                        sunlight = llm_data.get('sunlight', 'Indirect Light')
+                        temperature_min = llm_data.get('temperature_min', 15)
+                        temperature_max = llm_data.get('temperature_max', 25)
+                        humidity_level = llm_data.get('humidity', 'Medium')
+                        is_beginner_friendly = llm_data.get('is_beginner_friendly', False)
+                        care_tips = llm_data.get('care_tips', '')
+                        
+                        # Extract Urdu translations from LLM
+                        name_urdu = llm_data.get('name_urdu', common_name)
+                        scientific_name_urdu = llm_data.get('scientific_name_urdu', scientific_name)
+                        care_tips_urdu = llm_data.get('care_tips_urdu', care_tips)
+                        
+                        self.stdout.write(self.style.SUCCESS(f'  ✅ LLM provided care data and translations'))
+                        self.stdout.write(f'     English: {common_name}')
+                        self.stdout.write(f'     Urdu: {name_urdu}')
+                        self.stdout.write(f'     Category: {category}')
+                        self.stdout.write(f'     Care Level: {care_level}')
+                        self.stdout.write(f'     Watering: Every {water_frequency_days} days')
+                    else:
+                        # Fallback if LLM fails
+                        self.stdout.write(self.style.WARNING(f'  ⚠️ LLM failed, using default values'))
+                        
+                        # Default care values
+                        category = 'Foliage'
+                        care_level = 'Medium'
+                        water_frequency_days = 7
+                        sunlight = 'Indirect Light'
+                        temperature_min = 15
+                        temperature_max = 25
+                        humidity_level = 'Medium'
+                        is_beginner_friendly = False
+                        care_tips = f"{common_name} requires regular care and attention."
+                        
+                        # Fallback: Keep English as Urdu too
+                        name_urdu = common_name
+                        scientific_name_urdu = scientific_name
+                        care_tips_urdu = care_tips
                     
-                    
-                    # Simple description
+                    # Build description
                     description = f"{common_name}"
                     if scientific_name:
                         description += f" ({scientific_name})"
                     description += " is a beautiful plant. "
                     
-                    if plant_data.get('family'):
-                        description += f"It belongs to the {plant_data['family']} family. "
+                    if family:
+                        description += f"It belongs to the {family} family. "
                     
-                    # Determine if beginner friendly (simplified logic)
-                    is_beginner_friendly = category in ['Succulent', 'Cactus'] or 'easy' in common_name.lower()
+                    if care_tips:
+                        description += care_tips
                     
-                    # Translate to Urdu
-                    name_urdu = ''
-                    description_urdu = ''
-                    
-                    try:
-                        self.stdout.write(f'  🔤 Translating to Urdu...')
-                        
-                        # Translate name
-                        name_translation = translator.translate(common_name, src='en', dest='ur')
-                        name_urdu = name_translation.text if name_translation else ''
-                        
-                        # Translate description (keep it short for speed)
-                        desc_to_translate = f"{common_name} is a beautiful plant."
-                        desc_translation = translator.translate(desc_to_translate, src='en', dest='ur')
-                        description_urdu = desc_translation.text if desc_translation else ''
-                        
-                        self.stdout.write(f'  ✅ Urdu: {name_urdu}')
-                        
-                        # Small delay to avoid rate limiting
-                        time.sleep(0.5)
-                        
-                    except Exception as e:
-                        self.stdout.write(self.style.WARNING(f'  ⚠️ Translation failed: {str(e)}'))
-                        name_urdu = common_name  # Fallback to English
-                        description_urdu = description
+                    # Build Urdu description
+                    description_urdu = f"{name_urdu}"
+                    if scientific_name_urdu:
+                        description_urdu += f" ({scientific_name_urdu})"
+                    if care_tips_urdu:
+                        description_urdu += " " + care_tips_urdu
 
                     # Create or update plant
                     plant, created = Plant.objects.update_or_create(
-                        trefle_id=trefle_id,  # Using trefle_id field for trefle_id
+                        trefle_id=trefle_id,
                         defaults={
-                            'name': common_name[:200],  # Ensure it fits in CharField
-                            'name_urdu': name_urdu[:400] if name_urdu else '', 
+                            'name': common_name[:200],
+                            'name_urdu': name_urdu[:400] if name_urdu else '',
                             'scientific_name': scientific_name[:200] if scientific_name else '',
                             'description': description,
                             'description_urdu': description_urdu if description_urdu else '',
@@ -146,7 +156,7 @@ class Command(BaseCommand):
                             'sunlight': sunlight,
                             'temperature_min': temperature_min,
                             'temperature_max': temperature_max,
-                            'humidity_level': 'Medium',
+                            'humidity_level': humidity_level,
                             'category': category,
                             'image_url': image_url,
                             'is_beginner_friendly': is_beginner_friendly,
@@ -160,13 +170,16 @@ class Command(BaseCommand):
                     else:
                         total_updated += 1
                         self.stdout.write(f'  🔄 Updated: {common_name}')
+                    
+                    # Rate limiting - give LLM API time to breathe
+                    time.sleep(2)
                 
                 except Exception as e:
                     self.stdout.write(self.style.ERROR(f'  ❌ Error processing plant: {e}'))
                     total_skipped += 1
                     continue
             
-            # Small delay to be nice to the API
+            # Small delay between pages
             if page < pages:
                 time.sleep(1)
         

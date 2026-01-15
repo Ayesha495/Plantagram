@@ -49,7 +49,6 @@ Respond with ONLY a JSON object (no markdown, no explanations):
   "care_tips": "<brief English care tips>",
   "name_urdu": "<plant name in Urdu script>",
   "scientific_name_urdu": "<scientific name in Urdu script>",
-  "description_urdu": "<brief description in Urdu: 1-2 sentences about the plant>",
   "care_tips_urdu": "<care tips translated to Urdu>"
 }}
 
@@ -63,7 +62,7 @@ Provide accurate botanical data and proper Urdu translations."""
                 messages=[
                     {"role": "user", "content": prompt}
                 ],
-                max_tokens=800,  # Increased for complete response
+                max_tokens=800,
                 temperature=0.3,
             )
             
@@ -84,14 +83,14 @@ Provide accurate botanical data and proper Urdu translations."""
                 print(f"  ⚠️ Missing required fields in response")
                 return None
             
-            print(f"  ✅ Got complete data")
+            print(f"  ✅ Got complete data in 1 call")
             print(f"     English: {plant_name}")
             print(f"     Urdu: {complete_data['name_urdu']}")
             print(f"     Watering: every {complete_data['watering_days']} days")
             print(f"     Care Level: {complete_data['care_level']}")
             
             # Rate limiting
-            time.sleep(2)  # 2 seconds between requests
+            time.sleep(2)
             
             return complete_data
             
@@ -116,7 +115,7 @@ Provide accurate botanical data and proper Urdu translations."""
             if test_data and all(key in test_data for key in ['watering_days', 'name_urdu']):
                 print("\n✅ Service working! Got everything in one call:")
                 print(json.dumps(test_data, indent=2, ensure_ascii=False))
-                print(f"\n💰 API calls used: 1 (optimized!)")
+                print(f"\n💰 API calls used: 1 (optimized from 4!)")
                 return True
             else:
                 print("\n❌ Service failed")

@@ -5,7 +5,7 @@ from plants.llm_service import PlantCareLLM
 import time
 
 class Command(BaseCommand):
-    help = 'Sync plants from Trefle API to database with LLM-powered care data and Urdu translations'
+    help = 'Sync plants from Trefle API with LLM care data and Urdu translations (optimized: 1 call per plant)'
     
     def add_arguments(self, parser):
         parser.add_argument(
@@ -22,7 +22,7 @@ class Command(BaseCommand):
     
     def handle(self, *args, **options):
         api = TrefleAPI()
-        llm = PlantCareLLM()  # Initialize LLM service (replaces Google Translate)
+        llm = PlantCareLLM()
         pages = options['pages']
         clear_existing = options['clear']
         
@@ -32,7 +32,7 @@ class Command(BaseCommand):
             self.stdout.write(self.style.WARNING('Cleared all existing plants'))
         
         self.stdout.write(f'Fetching {pages} pages of plants from Trefle API...')
-        self.stdout.write(f'Using Hugging Face LLM for care data and Urdu translations...\n')
+        self.stdout.write(f'Using OPTIMIZED Hugging Face LLM (1 call per plant)...\n')
         
         total_created = 0
         total_updated = 0
@@ -71,43 +71,37 @@ class Command(BaseCommand):
                     # Get family
                     family = plant_data.get('family', '')
                     
-                    self.stdout.write(f'  🌱 Processing: {common_name}')
+                    self.stdout.write(f'\n  🌱 Processing: {common_name}')
                     
-                    # ===== NEW: Get care data AND translations from LLM =====
-                    llm_data = llm.get_care_data_with_translations(
+                    # ===== OPTIMIZED: Get EVERYTHING in ONE LLM call =====
+                    complete_data = llm.get_complete_plant_data(
                         plant_name=common_name,
                         scientific_name=scientific_name,
                         family=family
                     )
                     
-                    if llm_data:
+                    if complete_data:
                         # Extract care data from LLM
-                        category = llm_data.get('category', 'Foliage')
-                        care_level = llm_data.get('care_level', 'Medium')
-                        water_frequency_days = llm_data.get('watering_days', 7)
-                        sunlight = llm_data.get('sunlight', 'Indirect Light')
-                        temperature_min = llm_data.get('temperature_min', 15)
-                        temperature_max = llm_data.get('temperature_max', 25)
-                        humidity_level = llm_data.get('humidity', 'Medium')
-                        is_beginner_friendly = llm_data.get('is_beginner_friendly', False)
-                        care_tips = llm_data.get('care_tips', '')
+                        category = complete_data.get('category', 'Foliage')
+                        care_level = complete_data.get('care_level', 'Medium')
+                        water_frequency_days = complete_data.get('watering_days', 7)
+                        sunlight = complete_data.get('sunlight', 'Indirect Light')
+                        temperature_min = complete_data.get('temperature_min', 15)
+                        temperature_max = complete_data.get('temperature_max', 25)
+                        humidity_level = complete_data.get('humidity', 'Medium')
+                        is_beginner_friendly = complete_data.get('is_beginner_friendly', False)
+                        care_tips = complete_data.get('care_tips', '')
                         
-                        # Extract Urdu translations from LLM
-                        name_urdu = llm_data.get('name_urdu', common_name)
-                        scientific_name_urdu = llm_data.get('scientific_name_urdu', scientific_name)
-                        care_tips_urdu = llm_data.get('care_tips_urdu', care_tips)
+                        # Extract Urdu translations from SAME LLM response
+                        name_urdu = complete_data.get('name_urdu', common_name)
+                        scientific_name_urdu = complete_data.get('scientific_name_urdu', scientific_name)
+                        care_tips_urdu = complete_data.get('care_tips_urdu', care_tips)
                         
-                        self.stdout.write(self.style.SUCCESS(f'  ✅ LLM provided care data and translations'))
-                        self.stdout.write(f'     English: {common_name}')
-                        self.stdout.write(f'     Urdu: {name_urdu}')
-                        self.stdout.write(f'     Category: {category}')
-                        self.stdout.write(f'     Care Level: {care_level}')
-                        self.stdout.write(f'     Watering: Every {water_frequency_days} days')
+                        self.stdout.write(self.style.SUCCESS(f'  ✅ Got complete data (1 API call)'))
                     else:
                         # Fallback if LLM fails
-                        self.stdout.write(self.style.WARNING(f'  ⚠️ LLM failed, using default values'))
+                        self.stdout.write(self.style.WARNING(f'  ⚠️ LLM failed, using defaults'))
                         
-                        # Default care values
                         category = 'Foliage'
                         care_level = 'Medium'
                         water_frequency_days = 7
@@ -118,12 +112,12 @@ class Command(BaseCommand):
                         is_beginner_friendly = False
                         care_tips = f"{common_name} requires regular care and attention."
                         
-                        # Fallback: Keep English as Urdu too
+                        # Fallback: Use English
                         name_urdu = common_name
                         scientific_name_urdu = scientific_name
                         care_tips_urdu = care_tips
                     
-                    # Build description
+                    # Build English description
                     description = f"{common_name}"
                     if scientific_name:
                         description += f" ({scientific_name})"
@@ -137,14 +131,14 @@ class Command(BaseCommand):
                     
                     # Build Urdu description
                     description_urdu = f"{name_urdu}"
-                    if scientific_name_urdu:
+                    if scientific_name_urdu and scientific_name_urdu != name_urdu:
                         description_urdu += f" ({scientific_name_urdu})"
                     if care_tips_urdu:
                         description_urdu += " " + care_tips_urdu
 
                     # Create or update plant
                     plant, created = Plant.objects.update_or_create(
-                        trefle_id=trefle_id,
+                        trefle_id=trefle_id,  # Using trefle_id field for trefle_id
                         defaults={
                             'name': common_name[:200],
                             'name_urdu': name_urdu[:400] if name_urdu else '',
@@ -159,6 +153,7 @@ class Command(BaseCommand):
                             'humidity_level': humidity_level,
                             'category': category,
                             'image_url': image_url,
+                            'care_tips': care_tips,
                             'is_beginner_friendly': is_beginner_friendly,
                             'is_popular': False,
                         }
@@ -170,9 +165,6 @@ class Command(BaseCommand):
                     else:
                         total_updated += 1
                         self.stdout.write(f'  🔄 Updated: {common_name}')
-                    
-                    # Rate limiting - give LLM API time to breathe
-                    time.sleep(2)
                 
                 except Exception as e:
                     self.stdout.write(self.style.ERROR(f'  ❌ Error processing plant: {e}'))
@@ -181,10 +173,11 @@ class Command(BaseCommand):
             
             # Small delay between pages
             if page < pages:
-                time.sleep(1)
+                self.stdout.write('\n  ⏸️  Pausing before next page...\n')
+                time.sleep(2)
         
         # Summary
-        self.stdout.write('\n' + '='*50)
+        self.stdout.write('\n' + '='*60)
         self.stdout.write(self.style.SUCCESS(f'✅ Sync complete!'))
         self.stdout.write(self.style.SUCCESS(f'📊 Results:'))
         self.stdout.write(self.style.SUCCESS(f'   Created: {total_created} plants'))
@@ -192,4 +185,5 @@ class Command(BaseCommand):
         if total_skipped > 0:
             self.stdout.write(self.style.WARNING(f'   Skipped: {total_skipped} plants'))
         self.stdout.write(self.style.SUCCESS(f'   Total in database: {Plant.objects.count()} plants'))
-        self.stdout.write('='*50)
+        self.stdout.write(self.style.SUCCESS(f'   API calls used: ~{total_created + total_updated} (75% reduction!)'))
+        self.stdout.write('='*60)

@@ -54,7 +54,10 @@ export const authService = {
       return response.data;
     } catch (error: any) {
       console.error('Signup error:', error.response?.data);
-      throw error.response?.data || { error: 'Signup failed' };
+      const errorData = error.response?.data || {};
+      
+      // Throw the error data directly so component can access specific field errors
+      throw errorData;
     }
   },
 
@@ -73,7 +76,10 @@ export const authService = {
       return response.data;
     } catch (error: any) {
       console.error('Login error:', error.response?.data);
-      throw error.response?.data || { error: 'Login failed' };
+      const errorData = error.response?.data || {};
+      
+      // Throw the error data directly so component can access error message
+      throw errorData;
     }
   },
 
@@ -85,7 +91,9 @@ export const authService = {
       return response.data;
     } catch (error: any) {
       console.error('Get profile error:', error.response?.data);
-      throw error.response?.data || { error: 'Failed to get profile' };
+      const errorData = error.response?.data || {};
+      
+      throw errorData;
     }
   },
 

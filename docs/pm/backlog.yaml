@@ -1,0 +1,134 @@
+# Single source of truth for the GitHub Project backlog.
+# Seed/refresh with: python scripts/pm/seed_github_project.py
+# Task format: [title, story points, priority, area]
+sprint_length_days: 14
+first_sprint_start: 2026-11-09
+sprint_1_phases: [0, 1]
+
+epics:
+  - phase: 0
+    title: "Phase 0 - Repo hygiene and project setup"
+    tasks:
+      - ["Move Django secrets to env and add root .gitignore", 1, P0, platform]
+      - ["Obsidian project map vault", 2, P2, platform]
+      - ["GitHub Project, labels, milestones and backlog seed", 2, P1, platform]
+
+  - phase: 1
+    title: "Phase 1 - DevOps platform"
+    tasks:
+      - ["12-factor settings, /healthz, /readyz, /metrics, JSON logs", 3, P0, backend]
+      - ["Backend Dockerfile (api + worker) multi-arch", 3, P0, platform]
+      - ["Web Dockerfile (Expo web export on Nginx)", 2, P0, platform]
+      - ["docker-compose for local dev (api, worker, redis, postgres, web)", 2, P0, platform]
+      - ["Celery + Redis wiring", 3, P1, backend]
+      - ["OpenTelemetry instrumentation (Django, Celery, HTTP clients)", 3, P2, backend]
+      - ["CI: lint and tests (ruff, pytest, eslint, jest)", 3, P0, platform]
+      - ["CI: security gates (Trivy, gitleaks, pip-audit, npm audit, CodeQL)", 3, P1, platform]
+      - ["Conventional Commits lint, PR template, Dependabot", 1, P2, platform]
+      - ["Terraform: OCI network + Always Free Ampere VM", 5, P0, platform]
+      - ["Ansible: hardening + k3s install", 5, P0, platform]
+      - ["Bootstrap Argo CD + Sealed Secrets", 3, P0, platform]
+      - ["Helm chart: api, worker, web, cronjobs, migration hook", 5, P0, platform]
+      - ["Argo CD App-of-Apps for staging and production", 3, P0, platform]
+      - ["Traefik + cert-manager + DuckDNS TLS", 3, P1, platform]
+      - ["Neon staging and production branches", 1, P1, platform]
+      - ["CD: build, push to GHCR, sign, bump staging values", 5, P0, platform]
+      - ["release-please + production promotion with approval", 3, P1, platform]
+      - ["EAS build/submit/update workflows", 3, P2, platform]
+      - ["Grafana Alloy to Grafana Cloud (metrics, logs, traces)", 3, P1, platform]
+      - ["Dashboards: cluster, API RED, Celery, CronJobs", 3, P2, platform]
+      - ["Alert rules to Discord/Telegram + email, with runbooks", 3, P1, platform]
+      - ["Nightly pg_dump backup CronJob to OCI Object Storage", 2, P2, platform]
+      - ["Hello build deployed to staging and production end to end", 2, P0, platform]
+
+  - phase: 2
+    title: "Phase 2 - App foundation"
+    tasks:
+      - ["Design tokens and UI kit from Figma", 5, P0, design]
+      - ["i18n English + Urdu with RTL", 3, P0, app]
+      - ["Navigation shell: 5 tabs + drawer + web top nav", 3, P0, app]
+      - ["TanStack Query + Zustand setup with persisted cache", 2, P0, app]
+      - ["Auth API: username-or-email login, Google, verify email, reset", 5, P0, backend]
+      - ["Auth screens: splash, login, signup", 3, P0, app]
+      - ["Onboarding: location (city-level) and language", 3, P1, app]
+      - ["Profile basics, edit profile, privacy toggle, QR share", 3, P1, app]
+      - ["Account deletion (30-day grace) and data export", 3, P1, backend]
+      - ["Sentry + Cloudinary integration", 2, P1, platform]
+
+  - phase: 3
+    title: "Phase 3 - Core plant care"
+    tasks:
+      - ["Curated Pakistan plant core (~150-300) with Urdu", 5, P0, backend]
+      - ["Move LLM enrichment to Gemini behind a provider interface", 2, P1, ai]
+      - ["Plant database screens: search, filters, detail", 3, P0, app]
+      - ["garden app models: UserPlant, CareSchedule, CareTask, GrowthLog", 3, P0, backend]
+      - ["My Plants screen + Add Plant wizard", 5, P0, app]
+      - ["Camera light meter", 3, P2, app]
+      - ["Care schedules with weather-aware watering", 5, P0, backend]
+      - ["Reminders: local, Expo push, web push, quiet hours", 5, P0, app]
+      - ["Growth log with timeline and height chart", 3, P1, app]
+      - ["Weather screen + threshold alerts", 3, P1, app]
+      - ["Seasonal tips", 2, P2, content]
+      - ["Home dashboard", 3, P0, app]
+      - ["Offline cache + queued actions", 5, P1, app]
+      - ["Rule-based recommendations and local trending", 3, P1, backend]
+
+  - phase: 4
+    title: "Phase 4 - Identify and AI Botanist"
+    tasks:
+      - ["Pl@ntNet species identification", 3, P0, ai]
+      - ["Gemini disease and pest identification", 3, P0, ai]
+      - ["Identify flow screens: intro, type, guide, camera, results", 5, P0, app]
+      - ["AI Botanist chat with history and plant context", 5, P0, ai]
+      - ["Per-user daily AI caps with counter", 2, P0, backend]
+
+  - phase: 5
+    title: "Phase 5 - Gamification"
+    tasks:
+      - ["Points ledger service with daily caps", 3, P0, gamification]
+      - ["Streaks", 2, P0, gamification]
+      - ["Levels (7 thresholds)", 2, P1, gamification]
+      - ["Achievements", 3, P1, gamification]
+      - ["Daily and monthly challenges", 5, P1, gamification]
+      - ["Weekly leagues with promotion/demotion", 5, P0, gamification]
+      - ["Cosmetics", 3, P2, gamification]
+      - ["Profile tabs: levels, achievements, challenges, leaderboard", 5, P1, app]
+
+  - phase: 6
+    title: "Phase 6 - Social (PetalPost)"
+    tasks:
+      - ["Follows with private accounts and requests", 3, P0, social]
+      - ["Posts with multiple photos", 5, P0, social]
+      - ["24h stories", 3, P1, social]
+      - ["Reactions, saves and comments", 5, P0, social]
+      - ["Profile search and user profiles", 3, P1, social]
+      - ["Notifications centre", 3, P0, social]
+      - ["Realtime DMs via Supabase", 5, P0, social]
+      - ["Discover Top Gardeners", 2, P2, social]
+      - ["Report, block and auto-filter moderation", 5, P0, social]
+
+  - phase: 7
+    title: "Phase 7 - Meetups, content and places"
+    tasks:
+      - ["Meetups with RSVP and group chat", 5, P1, social]
+      - ["Blog submit and approval flow", 5, P1, content]
+      - ["Gardening journal", 3, P1, content]
+      - ["Nurseries from Overpass with map and directions", 5, P1, content]
+
+  - phase: 8
+    title: "Phase 8 - Staff dashboard"
+    tasks:
+      - ["Role-gated staff area", 2, P0, staff]
+      - ["Reports queue and blog review", 5, P0, staff]
+      - ["Data management: plants, tips, challenges, nurseries, cosmetics", 5, P1, staff]
+      - ["AI caps, roles and stats", 3, P1, staff]
+
+  - phase: 9
+    title: "Phase 9 - Launch hardening"
+    tasks:
+      - ["Security review and rate limiting", 3, P0, launch]
+      - ["k6 load test and chaos checks", 3, P1, launch]
+      - ["Privacy policy, terms, Play data-safety", 3, P0, launch]
+      - ["Accessibility and performance pass", 3, P1, launch]
+      - ["Maestro E2E flows", 3, P1, launch]
+      - ["Play Store listing and release", 3, P0, launch]
